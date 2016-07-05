@@ -22,7 +22,14 @@ words = []
 
 for tweet in tweets:
     if not tweet.retweeted:
-        res = mecab.parse(tweet.text)
+        entity = tweet.entities
+        text = tweet.text
+        if len(entity['user_mentions']) > 0:
+            for user in entity['user_mentions']:
+                identity = '@' + user['screen_name']
+                text = text.replace(identity, '')
+
+        res = mecab.parse(text)
         words.extend(res.split())
 
 frec = {}
