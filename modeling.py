@@ -18,7 +18,7 @@ auth.set_access_token(denv('ACCESS_TOKEN'), denv('ACCESS_SECRET'))
 api = tweepy.API(auth)
 
 tweets = api.user_timeline(count=50)
-mecab = MeCab.Tagger('-Owakati')
+mecab = MeCab.Tagger('')
 words = []
 
 for tweet in tweets:
@@ -38,8 +38,12 @@ for tweet in tweets:
                 identity = '@' + user['screen_name']
                 text = text.replace(identity, '')
 
-        res = mecab.parse(text)
-        words.extend(res.split())
+        for chunk in mecab.parse(text).splitlines():
+            if chunk == 'EOS':
+                continue
+            (surface, feature) = chunk.split('\t')
+            if feature.startswith('名詞'):
+                words.append(surface)
 
 frec = {}
 for word in words:
