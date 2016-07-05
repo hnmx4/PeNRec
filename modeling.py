@@ -4,6 +4,7 @@ import dotenv
 import tweepy
 import MeCab
 import yaml
+import pprint
 
 from os.path import join, dirname
 
@@ -22,9 +23,17 @@ words = []
 
 for tweet in tweets:
     if not tweet.retweeted:
-        entity = tweet.entities
         text = tweet.text
-        if len(entity['user_mentions']) > 0:
+        entity = tweet.entities
+        if 'media' in entity:
+            for media in entity['media']:
+                text = text.replace(media['display_url'], '')
+                text = text.replace(media['expanded_url'], '')
+
+        if len(entity['urls']) > 0:
+            for url in entity['urls']:
+                text = text.replace(url['url'], '')
+        elif len(entity['user_mentions']) > 0:
             for user in entity['user_mentions']:
                 identity = '@' + user['screen_name']
                 text = text.replace(identity, '')
