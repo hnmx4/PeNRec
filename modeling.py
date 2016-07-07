@@ -37,10 +37,10 @@ def process_tweet(tw):
         return text
 
 
-def extract_nouns(text):
+def extract_nouns(sen):
     nouns = []
     mecab = MeCab.Tagger('')
-    for chunk in mecab.parse(text).splitlines():
+    for chunk in mecab.parse(sen).splitlines():
         if chunk == 'EOS':
             continue
         (surface, feature) = chunk.split('\t')
@@ -52,9 +52,9 @@ def extract_nouns(text):
 tweets = api.user_timeline(count=50)
 words = []
 for tweet in tweets:
-    text = process_tweet(tweet)
-    if text:
-        words.extend(extract_nouns(text))
+    processed_tweet = process_tweet(tweet)
+    if processed_tweet():
+        words.extend(extract_nouns(processed_tweet))
 
 frec = {}
 for word in words:
