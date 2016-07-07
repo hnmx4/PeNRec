@@ -7,6 +7,7 @@ import yaml
 import pprint
 
 from os.path import join, dirname
+from pymongo import MongoClient
 
 
 def denv(envkey):
@@ -16,6 +17,13 @@ def denv(envkey):
 auth = tweepy.OAuthHandler(denv('CONSUMER_KEY'), denv('CONSUMER_SECRET'))
 auth.set_access_token(denv('ACCESS_TOKEN'), denv('ACCESS_SECRET'))
 api = tweepy.API(auth)
+
+client = MongoClient('localhost', 27017)
+db = client.penrec
+collection_tweets = db.tweets
+collection_words = db.wors
+collection_positive = db.positive
+collection_negative = db.negative
 
 
 def process_tweet(tw):
