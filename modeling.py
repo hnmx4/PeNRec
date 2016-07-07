@@ -17,14 +17,11 @@ auth = tweepy.OAuthHandler(denv('CONSUMER_KEY'), denv('CONSUMER_SECRET'))
 auth.set_access_token(denv('ACCESS_TOKEN'), denv('ACCESS_SECRET'))
 api = tweepy.API(auth)
 
-tweets = api.user_timeline(count=50)
-mecab = MeCab.Tagger('')
-words = []
 
-for tweet in tweets:
-    if not tweet.retweeted:
-        text = tweet.text
-        entity = tweet.entities
+def process_tweet(tw):
+    if not tw.retweeted:
+        text = tw.text
+        entity = tw.entities
         if 'media' in entity:
             for media in entity['media']:
                 text = text.replace(media['display_url'], '')
@@ -37,13 +34,27 @@ for tweet in tweets:
             for user in entity['user_mentions']:
                 identity = '@' + user['screen_name']
                 text = text.replace(identity, '')
+        return text
 
-        for chunk in mecab.parse(text).splitlines():
-            if chunk == 'EOS':
-                continue
-            (surface, feature) = chunk.split('\t')
-            if feature.startswith('名詞'):
-                words.append(surface)
+
+def extract_nouns(text):
+    nouns = []
+    mecab = MeCab.Tagger('')
+    for chunk in mecab.parse(text).splitlines():
+        if chunk == 'EOS':
+            continue
+        (surface, feature) = chunk.split('\t')
+        if feature.startswith('名詞'):
+            nouns.append(surface)
+    return nouns
+
+
+tweets = api.user_timeline(count=50)
+words = []
+for tweet in tweets:
+    text = process_tweet(tweet)
+    if text:
+        words.extend(extract_nouns(text))
 
 frec = {}
 for word in words:
