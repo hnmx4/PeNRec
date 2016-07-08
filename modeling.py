@@ -1,17 +1,13 @@
 # -*- coding:utf-8 -*-
 
-import dotenv
 import tweepy
 import MeCab
 import yaml
 import pprint
 
-from os.path import join, dirname
+from common import denv
+from os.path import join, dirname, abspath
 from pymongo import MongoClient
-
-
-def denv(envkey):
-    return dotenv.get_key(join(dirname(__file__), '.env'), envkey)
 
 
 auth = tweepy.OAuthHandler(denv('CONSUMER_KEY'), denv('CONSUMER_SECRET'))
@@ -20,10 +16,11 @@ api = tweepy.API(auth)
 
 client = MongoClient('localhost', 27017)
 db = client.penrec
-collection_tweets = db.tweets
-collection_words = db.wors
-collection_positive = db.positive
-collection_negative = db.negative
+c_tweets = db.tweets
+c_words = db.wors
+c_positive = db.positive
+c_negative = db.negative
+c_emotion_dict = db.emotion_dict
 
 
 def process_tweet(tw):
@@ -45,10 +42,11 @@ def process_tweet(tw):
         return text
 
 
-def extract_nouns(sen):
+
+def extract_nouns(s):
     nouns = []
     mecab = MeCab.Tagger('')
-    for chunk in mecab.parse(sen).splitlines():
+    for chunk in mecab.parse(s).splitlines():
         if chunk == 'EOS':
             continue
         (surface, feature) = chunk.split('\t')
