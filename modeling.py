@@ -61,7 +61,7 @@ tweets = api.user_timeline(count=50)
 words = []
 for tweet in tweets:
     processed_tweet = process_tweet(tweet)
-    if processed_tweet():
+    if processed_tweet:
         words.extend(extract_nouns(processed_tweet))
 
 frec = {}
