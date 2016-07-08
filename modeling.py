@@ -2,7 +2,7 @@
 
 import tweepy
 import MeCab
-import yaml
+import json
 
 from common import denv
 from os.path import join, dirname, abspath
@@ -82,10 +82,10 @@ for word in words:
     else:
         frec[word] = 1
 
-f = open(join(dirname(__file__), 'word_list.yml'), 'w')
-f.write(yaml.dump(frec, allow_unicode=True))
+f = open(join(abspath(dirname(__file__)), 'word_list.json'), 'w')
+f.write(json.dumps(frec, sort_keys=True, indent=4, ensure_ascii=False))
 f.close()
 
-f = open(join(dirname(__file__), 'senti_list.yml'), 'w')
-f.write(yaml.dump(senti, allow_unicode=True))
+f = open(join(abspath(dirname(__file__)), 'senti_list.json'), 'w')
+f.write(json.dumps(senti, sort_keys=True, indent=4, ensure_ascii=False))
 f.close()
