@@ -55,12 +55,25 @@ def extract_nouns(s):
     return nouns
 
 
+def calculate_sentiment_value(s):
+    nouns = extract_nouns(s)
+    np_dict = {doc['word']: doc['value'] for doc in c_senti_noun_dict.find({}, {'word': 1, 'value': 1})}
+    val = 0
+    cnt = 0
+    for noun in nouns:
+        val = (lambda x: x + np_dict[noun] if noun in np_dict else x)(val)
+        cnt += 1
+    return val / cnt if cnt > 0 else 0
+
+
 tweets = api.user_timeline(count=50)
 words = []
+senti = {}
 for tweet in tweets:
-    processed_tweet = process_tweet(tweet)
-    if processed_tweet:
-        words.extend(extract_nouns(processed_tweet))
+    tweet = process_tweet(tweet)
+    if tweet:
+        words.extend(extract_nouns(tweet))
+        senti[tweet] = calculate_sentiment_value(tweet)
 
 frec = {}
 for word in words:
@@ -71,4 +84,8 @@ for word in words:
 
 f = open(join(dirname(__file__), 'word_list.yml'), 'w')
 f.write(yaml.dump(frec, allow_unicode=True))
+f.close()
+
+f = open(join(dirname(__file__), 'senti_list.yml'), 'w')
+f.write(yaml.dump(senti, allow_unicode=True))
 f.close()
