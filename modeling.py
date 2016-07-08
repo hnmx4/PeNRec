@@ -3,10 +3,10 @@
 import tweepy
 import MeCab
 import yaml
-import pprint
 
 from common import denv
 from os.path import join, dirname, abspath
+from pprint import pprint
 from pymongo import MongoClient
 
 
@@ -20,7 +20,8 @@ c_tweets = db.tweets
 c_words = db.wors
 c_positive = db.positive
 c_negative = db.negative
-c_emotion_dict = db.emotion_dict
+c_senti_noun_dict = db.sentiment_noun_dict
+c_senti_dec_word_dict = db.sentiment_declinable_word_dict
 
 
 def process_tweet(tw):
@@ -40,7 +41,6 @@ def process_tweet(tw):
                 identity = '@' + user['screen_name']
                 text = text.replace(identity, '')
         return text
-
 
 
 def extract_nouns(s):
