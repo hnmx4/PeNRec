@@ -5,3 +5,4 @@
 *.yml
 pn.csv.m3.120408.trim
 wago.121808.pn
+*.pyc
