@@ -3,11 +3,13 @@
 import tweepy
 import MeCab
 import json
+import urllib.request
 
 from common import denv
 from os.path import join, dirname, abspath
 from pprint import pprint
 from pymongo import MongoClient
+from bs4 import BeautifulSoup
 
 
 auth = tweepy.OAuthHandler(denv('CONSUMER_KEY'), denv('CONSUMER_SECRET'))
@@ -65,6 +67,28 @@ def calculate_sentiment_value(s):
         cnt += 1
     return val / cnt if cnt > 0 else 0
 
+
+def fetch_words_from_nhk():
+    urls = ['http://www3.nhk.or.jp/rss/news/cat' + str(i) + '.xml' for i in range(8)]
+    mecab = MeCab.Tagger('-Owakati')
+    result = ''
+    for url in urls:
+        html = urllib.request.urlopen(url)
+        soup = BeautifulSoup(html, 'html.parser')
+
+        titles = soup.find_all('title')
+        for s in titles:
+            result += mecab.parse(str(s).replace('<title>', '').replace('</title>', ''))
+        descriptions = soup.find_all('description')
+        for s in descriptions:
+            result += mecab.parse(str(s).replace('<description>', '').replace('</description>', ''))
+
+    return result
+
+
+f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
+f.write(fetch_words_from_nhk())
+f.close()
 
 tweets = api.user_timeline(count=50)
 words = []
