@@ -10,7 +10,7 @@ from os.path import join, dirname, abspath
 from pprint import pprint
 from pymongo import MongoClient
 from bs4 import BeautifulSoup
-
+from gensim.models import word2vec
 
 auth = tweepy.OAuthHandler(denv('CONSUMER_KEY'), denv('CONSUMER_SECRET'))
 auth.set_access_token(denv('ACCESS_TOKEN'), denv('ACCESS_SECRET'))
@@ -45,6 +45,22 @@ def process_tweet(tw):
         return text
 
 
+def fetch_words_from_nhk():
+    urls = ['http://www3.nhk.or.jp/rss/news/cat' + str(i) + '.xml' for i in range(8)]
+    result = ''
+    for url in urls:
+        html = urllib.request.urlopen(url)
+        soup = BeautifulSoup(html, 'html.parser')
+
+        titles = soup.find_all('title')
+        for s in titles:
+            result += str(s).replace('<title>', '').replace('</title>', '')
+        descriptions = soup.find_all('description')
+        for s in descriptions:
+            result += str(s).replace('<description>', '').replace('</description>', '')
+    return result
+
+
 def extract_nouns(s):
     nouns = []
     mecab = MeCab.Tagger('')
@@ -68,48 +84,29 @@ def calculate_sentiment_value(s):
     return val / cnt if cnt > 0 else 0
 
 
-def fetch_words_from_nhk():
-    urls = ['http://www3.nhk.or.jp/rss/news/cat' + str(i) + '.xml' for i in range(8)]
+def create_word2vec_model():
+    f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
+
+    # text from NHK NEWS WEB
+    nhk = fetch_words_from_nhk()
+
+    # text from twitter user time-line
+    tweets = api.user_timeline(count=200)
+    twitter = ''
+    for tweet in tweets:
+        tweet = process_tweet(tweet)
+        if tweet:
+            twitter += tweet + '\n'
+
     mecab = MeCab.Tagger('-Owakati')
-    result = ''
-    for url in urls:
-        html = urllib.request.urlopen(url)
-        soup = BeautifulSoup(html, 'html.parser')
+    wakati = mecab.parse(nhk + twitter)
 
-        titles = soup.find_all('title')
-        for s in titles:
-            result += mecab.parse(str(s).replace('<title>', '').replace('</title>', ''))
-        descriptions = soup.find_all('description')
-        for s in descriptions:
-            result += mecab.parse(str(s).replace('<description>', '').replace('</description>', ''))
+    f.write(wakati)
 
-    return result
+    f.close()
 
+    data = word2vec.Text8Corpus('wakati.txt')
+    model = word2vec.Word2Vec(data, size=200)
+    model.save('word2vec.model')
 
-f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
-f.write(fetch_words_from_nhk())
-f.close()
-
-tweets = api.user_timeline(count=50)
-words = []
-senti = {}
-for tweet in tweets:
-    tweet = process_tweet(tweet)
-    if tweet:
-        words.extend(extract_nouns(tweet))
-        senti[tweet] = calculate_sentiment_value(tweet)
-
-frec = {}
-for word in words:
-    if word in frec:
-        frec[word] += 1
-    else:
-        frec[word] = 1
-
-f = open(join(abspath(dirname(__file__)), 'word_list.json'), 'w')
-f.write(json.dumps(frec, sort_keys=True, indent=4, ensure_ascii=False))
-f.close()
-
-f = open(join(abspath(dirname(__file__)), 'senti_list.json'), 'w')
-f.write(json.dumps(senti, sort_keys=True, indent=4, ensure_ascii=False))
-f.close()
+    return model
