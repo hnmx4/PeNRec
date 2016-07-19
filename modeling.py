@@ -85,10 +85,13 @@ def calculate_sentiment_value(s):
 
 
 def create_word2vec_model():
-    f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
+    mecab = MeCab.Tagger('-Owakati')
 
     # text from NHK NEWS WEB
     nhk = fetch_words_from_nhk()
+    f = open(join(abspath(dirname(__file__)), 'nhk.txt'), 'w')
+    f.write(mecab.parse(nhk))
+    f.close()
 
     # text from twitter user time-line
     tweets = api.user_timeline(count=200)
@@ -97,12 +100,12 @@ def create_word2vec_model():
         tweet = process_tweet(tweet)
         if tweet:
             twitter += tweet + '\n'
+    f = open(join(abspath(dirname(__file__)), 'twitter.txt'), 'w')
+    f.write(mecab.parse(twitter))
+    f.close()
 
-    mecab = MeCab.Tagger('-Owakati')
-    wakati = mecab.parse(nhk + twitter)
-
-    f.write(wakati)
-
+    f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
+    f.write(mecab.parse(nhk + twitter))
     f.close()
 
     data = word2vec.Text8Corpus('wakati.txt')
