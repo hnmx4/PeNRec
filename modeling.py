@@ -3,6 +3,7 @@
 import tweepy
 import MeCab
 import json
+import codecs
 import urllib.request
 
 from common import denv
@@ -45,7 +46,7 @@ def process_tweet(tw):
         return text
 
 
-def fetch_words_from_nhk():
+def fetch_sentence_from_nhk():
     urls = ['http://www3.nhk.or.jp/rss/news/cat' + str(i) + '.xml' for i in range(8)]
     result = ''
     for url in urls:
@@ -61,10 +62,10 @@ def fetch_words_from_nhk():
     return result
 
 
-def extract_nouns(s):
+def extract_nouns(str):
     nouns = []
     mecab = MeCab.Tagger('')
-    for chunk in mecab.parse(s).splitlines():
+    for chunk in mecab.parse(str).splitlines():
         if chunk == 'EOS':
             continue
         (surface, feature) = chunk.split('\t')
@@ -86,9 +87,11 @@ def calculate_sentiment_value(s):
 
 def create_word2vec_model():
     mecab = MeCab.Tagger('-Owakati')
+    nouns = []
 
     # text from NHK NEWS WEB
-    nhk = fetch_words_from_nhk()
+    nhk = fetch_sentence_from_nhk()
+    nouns.extend(extract_nouns(nhk))
     f = open(join(abspath(dirname(__file__)), 'nhk.txt'), 'w')
     f.write(mecab.parse(nhk))
     f.close()
@@ -100,8 +103,13 @@ def create_word2vec_model():
         tweet = process_tweet(tweet)
         if tweet:
             twitter += tweet + '\n'
+    nouns.extend(extract_nouns(twitter))
     f = open(join(abspath(dirname(__file__)), 'twitter.txt'), 'w')
     f.write(mecab.parse(twitter))
+    f.close()
+
+    f = codecs.open(join(abspath(dirname(__file__)), 'nouns.json'), 'w', 'utf-8')
+    f.write(json.dumps(list(set(nouns)), indent=4, ensure_ascii=False))
     f.close()
 
     f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
@@ -109,7 +117,7 @@ def create_word2vec_model():
     f.close()
 
     data = word2vec.Text8Corpus('wakati.txt')
-    model = word2vec.Word2Vec(data, size=200)
+    model = word2vec.Word2Vec(data, size=200, min_count=0)
     model.save('word2vec.model')
 
     return model
