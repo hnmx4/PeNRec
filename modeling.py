@@ -91,9 +91,10 @@ def create_word2vec_model():
 
     # text from NHK NEWS WEB
     nhk = fetch_sentence_from_nhk()
-    nouns.extend(extract_nouns(nhk))
-    f = open(join(abspath(dirname(__file__)), 'nhk.txt'), 'w')
-    f.write(mecab.parse(nhk))
+    nhk_nouns = extract_nouns(nhk)
+    nouns.extend(nhk_nouns)
+    f = codecs.open(join(abspath(dirname(__file__)), 'nhk-nouns.json'), 'w', 'utf-8')
+    f.write(json.dumps(list(set(nhk_nouns)), indent=4, ensure_ascii=False))
     f.close()
 
     # text from twitter user time-line
@@ -103,9 +104,10 @@ def create_word2vec_model():
         tweet = process_tweet(tweet)
         if tweet:
             twitter += tweet + '\n'
-    nouns.extend(extract_nouns(twitter))
-    f = open(join(abspath(dirname(__file__)), 'twitter.txt'), 'w')
-    f.write(mecab.parse(twitter))
+    twitter_nouns = extract_nouns(twitter)
+    nouns.extend(twitter_nouns)
+    f = codecs.open(join(abspath(dirname(__file__)), 'nhk-nouns.json'), 'w', 'utf-8')
+    f.write(json.dumps(list(set(twitter_nouns)), indent=4, ensure_ascii=False))
     f.close()
 
     f = codecs.open(join(abspath(dirname(__file__)), 'nouns.json'), 'w', 'utf-8')
