@@ -30,5 +30,16 @@ kmeans_model = KMeans(n_clusters=8, random_state=10).fit(features)
 
 labels = kmeans_model.labels_
 
+cluster = {}
 for label, noun in zip(labels, nouns):
-    print(label, noun)
+    cluster[noun] = label
+
+count = {}
+for label in labels:
+    count[label] = 0
+f = open(join(abspath(dirname(__file__)), 'twitter-nouns.json'), 'r')
+twitter_nouns = json.loads(f.read())
+f.close()
+for noun in twitter_nouns:
+    count[cluster[noun]] += 1
+most_interest_label = sorted(count.items(), key=lambda x: x[1], reverse=True)[0][0]
