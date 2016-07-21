@@ -90,10 +90,10 @@ def create_word2vec_model():
             item_soup = BeautifulSoup(str(i), 'html.parser')
             text = remove_tag(item_soup.title, 'title') + ' ' + remove_tag(item_soup.description, 'description')
             nhk += text
-            articles[remove_tag(item_soup.title, 'title')] = [
-                remove_tag(item_soup.link, 'link'),
-                list(set(extract_nouns(text)))
-            ]
+            articles[remove_tag(item_soup.title, 'title')] = {
+                'url': remove_tag(item_soup.link, 'link'),
+                'nouns': list(set(extract_nouns(text)))
+            }
 
     nhk_nouns = extract_nouns(nhk)
     f = codecs.open(join(abspath(dirname(__file__)), 'nhk-nouns.json'), 'w', 'utf-8')
