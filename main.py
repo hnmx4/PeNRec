@@ -27,7 +27,7 @@ features = np.empty([0, 200], float)
 for noun in nouns:
     features = np.append(features, np.array(model[noun])[np.newaxis, :], axis=0)
 
-kmeans_model = KMeans(n_clusters=8, random_state=10).fit(features)
+kmeans_model = KMeans(n_clusters=20, random_state=10).fit(features)
 
 labels = kmeans_model.labels_
 
@@ -65,6 +65,13 @@ for k, v in nhk_articles.items():
     if v['label'] == most_interest_label:
         match_articles[k] = v
 
-sorted_articles = sorted(match_articles.items(), key=lambda x: x[1]['rate'], reverse=True)
+match_articles = sorted(match_articles.items(), key=lambda x: x[1]['rate'], reverse=True)
+for k, v in match_articles[:16]:
+    print(k, v['url'], v['rate'])
 
-pprint.pprint(sorted_articles)
+interest = []
+for noun in twitter_nouns:
+    if cluster[noun] == most_interest_label:
+        interest.append(noun)
+
+print(interest)
