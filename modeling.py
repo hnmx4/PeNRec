@@ -46,26 +46,10 @@ def process_tweet(tw):
         return text
 
 
-def fetch_sentence_from_nhk():
-    urls = ['http://www3.nhk.or.jp/rss/news/cat' + str(i) + '.xml' for i in range(8)]
-    result = ''
-    for url in urls:
-        html = urllib.request.urlopen(url)
-        soup = BeautifulSoup(html, 'html.parser')
-
-        titles = soup.find_all('title')
-        for s in titles:
-            result += str(s).replace('<title>', '').replace('</title>', '')
-        descriptions = soup.find_all('description')
-        for s in descriptions:
-            result += str(s).replace('<description>', '').replace('</description>', '')
-    return result
-
-
-def extract_nouns(str):
+def extract_nouns(s):
     nouns = []
     mecab = MeCab.Tagger('')
-    for chunk in mecab.parse(str).splitlines():
+    for chunk in mecab.parse(s).splitlines():
         if chunk == 'EOS':
             continue
         (surface, feature) = chunk.split('\t')
@@ -85,17 +69,40 @@ def calculate_sentiment_value(s):
     return val / cnt if cnt > 0 else 0
 
 
+def remove_tag(s, tag):
+    return str(s).replace('<' + tag + '>', '').replace('</' + tag + '>', '')
+
+
 def create_word2vec_model():
     mecab = MeCab.Tagger('-Owakati')
     nouns = []
+    articles = {}
 
     # text from NHK NEWS WEB
-    nhk = fetch_sentence_from_nhk()
+    urls = ['http://www3.nhk.or.jp/rss/news/cat' + str(i) + '.xml' for i in range(8)]
+    nhk = ''
+    for url in urls:
+        html = urllib.request.urlopen(url)
+        soup = BeautifulSoup(html, 'html.parser')
+
+        items = soup.find_all('item')
+        for i in items:
+            item_soup = BeautifulSoup(str(i), 'html.parser')
+            text = remove_tag(item_soup.title, 'title') + ' ' + remove_tag(item_soup.description, 'description')
+            nhk += text
+            articles[remove_tag(item_soup.title, 'title')] = [
+                remove_tag(item_soup.link, 'link'),
+                list(set(extract_nouns(text)))
+            ]
+
     nhk_nouns = extract_nouns(nhk)
-    nouns.extend(nhk_nouns)
     f = codecs.open(join(abspath(dirname(__file__)), 'nhk-nouns.json'), 'w', 'utf-8')
     f.write(json.dumps(list(set(nhk_nouns)), indent=4, ensure_ascii=False))
     f.close()
+    f = codecs.open(join(abspath(dirname(__file__)), 'nhk-articles.json'), 'w', 'utf-8')
+    f.write(json.dumps(articles, indent=4, ensure_ascii=False))
+    f.close()
+    nouns.extend(nhk_nouns)
 
     # text from twitter user time-line
     tweets = api.user_timeline(count=200)
@@ -106,7 +113,7 @@ def create_word2vec_model():
             twitter += tweet + '\n'
     twitter_nouns = extract_nouns(twitter)
     nouns.extend(twitter_nouns)
-    f = codecs.open(join(abspath(dirname(__file__)), 'nhk-nouns.json'), 'w', 'utf-8')
+    f = codecs.open(join(abspath(dirname(__file__)), 'twitter-nouns.json'), 'w', 'utf-8')
     f.write(json.dumps(list(set(twitter_nouns)), indent=4, ensure_ascii=False))
     f.close()
 
@@ -117,7 +124,6 @@ def create_word2vec_model():
     f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
     f.write(mecab.parse(nhk + twitter))
     f.close()
-
     data = word2vec.Text8Corpus('wakati.txt')
     model = word2vec.Word2Vec(data, size=200, min_count=0)
     model.save('word2vec.model')
