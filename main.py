@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 
 import modeling
-import json
 import numpy as np
 import matplotlib.pyplot as plot
 import pprint
@@ -9,21 +8,19 @@ import pprint
 from os.path import join, abspath, dirname
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from common import read_json_file
 
 
 model = modeling.create_word2vec_model()
 
-vocab = model.vocab
-f = open(join(abspath(dirname(__file__)), 'nouns.json'), 'r')
-nouns = json.loads(f.read())
-f.close()
+nouns = read_json_file('nouns')
 
 features = np.empty([0, 200], float)
 for noun in nouns:
     features = np.append(features, np.array(model[noun])[np.newaxis, :], axis=0)
 
-_clusters = 6
-kmeans_model = KMeans(n_clusters=_clusters, random_state=10).fit(features)
+n_clusters = 6
+kmeans_model = KMeans(n_clusters=n_clusters, random_state=10).fit(features)
 
 labels = kmeans_model.labels_
 
@@ -34,16 +31,13 @@ for label, noun in zip(labels, nouns):
 count = {}
 for label in labels:
     count[label] = 0
-f = open(join(abspath(dirname(__file__)), 'twitter-nouns.json'), 'r')
-twitter_nouns = json.loads(f.read())
-f.close()
+
+twitter_nouns = read_json_file('twitter-nouns')
 for noun in twitter_nouns:
     count[cluster[noun]] += 1
 most_interest_label = sorted(count.items(), key=lambda x: x[1], reverse=True)[0][0]
 
-f = open(join(abspath(dirname(__file__)), 'nhk-articles.json'), 'r')
-nhk_articles = json.loads(f.read())
-f.close()
+nhk_articles = read_json_file('nhk-articles')
 match_articles = {}
 for k, v in nhk_articles.items():
     count = {}
@@ -81,7 +75,7 @@ lb_pa = []
 #     ...
 # ]
 
-for i in range(_clusters):
+for i in range(n_clusters):
     lb_pa.append([[], []])
 for noun, x, y in zip(nouns, pa[0], pa[1]):
     lb_pa[cluster[noun]][0].append(x)

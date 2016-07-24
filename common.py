@@ -1,12 +1,20 @@
 # -*- coding:utf-8 -*-
 
 import dotenv
+import json
 
 from os.path import join, dirname, abspath
 
 
 def denv(envkey):
     return dotenv.get_key(join(dirname(__file__), '.env'), envkey)
+
+
+def read_json_file(filename):
+    f = open(join(abspath(dirname(__file__)), filename + '.json'), 'r')
+    ret = json.loads(f.read())
+    f.close()
+    return ret
 
 
 def register_noun(c):
