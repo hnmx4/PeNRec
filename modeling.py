@@ -54,7 +54,9 @@ def extract_nouns(s):
             continue
         (surface, feature) = chunk.split('\t')
         if feature.startswith('名詞'):
-            nouns.append(surface)
+            ns = surface.split()
+            for n in ns:
+                nouns.append(n)
     return nouns
 
 
@@ -126,6 +128,5 @@ def create_word2vec_model():
     f.close()
     data = word2vec.Text8Corpus('wakati.txt')
     model = word2vec.Word2Vec(data, size=200, min_count=0)
-    model.save('word2vec.model')
 
     return model
