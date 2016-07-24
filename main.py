@@ -2,21 +2,16 @@
 
 import modeling
 import json
-import codecs
 import numpy as np
+import matplotlib.pyplot as plot
 import pprint
 
 from os.path import join, abspath, dirname
-from os import listdir
-from gensim.models import word2vec
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 
-files = listdir(abspath(dirname(__file__)))
-if 'word2vec.model' in files:
-    model = word2vec.Word2Vec.load('word2vec.model')
-else:
-    model = modeling.create_word2vec_model()
+model = modeling.create_word2vec_model()
 
 vocab = model.vocab
 f = open(join(abspath(dirname(__file__)), 'nouns.json'), 'r')
@@ -27,7 +22,8 @@ features = np.empty([0, 200], float)
 for noun in nouns:
     features = np.append(features, np.array(model[noun])[np.newaxis, :], axis=0)
 
-kmeans_model = KMeans(n_clusters=20, random_state=10).fit(features)
+_clusters = 6
+kmeans_model = KMeans(n_clusters=_clusters, random_state=10).fit(features)
 
 labels = kmeans_model.labels_
 
@@ -74,4 +70,27 @@ for noun in twitter_nouns:
     if cluster[noun] == most_interest_label:
         interest.append(noun)
 
-print(interest)
+pca = PCA(n_components=2)
+pca.fit(features)
+pa = pca.components_
+
+lb_pa = []
+# [
+#     [[], []],
+#     [[], []],
+#     ...
+# ]
+
+for i in range(_clusters):
+    lb_pa.append([[], []])
+for noun, x, y in zip(nouns, pa[0], pa[1]):
+    lb_pa[cluster[noun]][0].append(x)
+    lb_pa[cluster[noun]][1].append(y)
+
+col = {0: 'b', 1: 'g', 2: 'r', 3: 'c', 4: 'm', 5: 'y', 6: 'k', 7: 'w'}
+for i, e in enumerate(lb_pa):
+    plot.scatter(e[0], e[1], c=col[i], alpha=0.7)
+
+plot.title('features')
+
+plot.show()
