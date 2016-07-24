@@ -2,6 +2,7 @@
 
 import dotenv
 import json
+import codecs
 
 from os.path import join, dirname, abspath
 
@@ -15,6 +16,18 @@ def read_json_file(filename):
     ret = json.loads(f.read())
     f.close()
     return ret
+
+
+def write_json_file(data, filename):
+    f = codecs.open(join(abspath(dirname(__file__)), filename + '.json'), 'w', 'utf-8')
+    f.write(json.dumps(data, indent=4, ensure_ascii=False))
+    f.close()
+
+
+def write_file(data, filename):
+    f = open(join(abspath(dirname(__file__)), filename), 'w')
+    f.write(data)
+    f.close()
 
 
 def register_noun(c):

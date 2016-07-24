@@ -6,12 +6,12 @@ import json
 import codecs
 import urllib.request
 
-from common import denv
 from os.path import join, dirname, abspath
 from pprint import pprint
 from pymongo import MongoClient
 from bs4 import BeautifulSoup
 from gensim.models import word2vec
+from common import denv, write_json_file, write_file
 
 auth = tweepy.OAuthHandler(denv('CONSUMER_KEY'), denv('CONSUMER_SECRET'))
 auth.set_access_token(denv('ACCESS_TOKEN'), denv('ACCESS_SECRET'))
@@ -98,12 +98,8 @@ def create_word2vec_model():
             }
 
     nhk_nouns = extract_nouns(nhk)
-    f = codecs.open(join(abspath(dirname(__file__)), 'nhk-nouns.json'), 'w', 'utf-8')
-    f.write(json.dumps(list(set(nhk_nouns)), indent=4, ensure_ascii=False))
-    f.close()
-    f = codecs.open(join(abspath(dirname(__file__)), 'nhk-articles.json'), 'w', 'utf-8')
-    f.write(json.dumps(articles, indent=4, ensure_ascii=False))
-    f.close()
+    write_json_file(list(set(nhk_nouns)), 'nhk-nouns')
+    write_json_file(articles, 'nhk-articles')
     nouns.extend(nhk_nouns)
 
     # text from twitter user time-line
@@ -115,17 +111,11 @@ def create_word2vec_model():
             twitter += tweet + '\n'
     twitter_nouns = extract_nouns(twitter)
     nouns.extend(twitter_nouns)
-    f = codecs.open(join(abspath(dirname(__file__)), 'twitter-nouns.json'), 'w', 'utf-8')
-    f.write(json.dumps(list(set(twitter_nouns)), indent=4, ensure_ascii=False))
-    f.close()
+    write_json_file(list(set(twitter_nouns)), 'twitter-nouns')
 
-    f = codecs.open(join(abspath(dirname(__file__)), 'nouns.json'), 'w', 'utf-8')
-    f.write(json.dumps(list(set(nouns)), indent=4, ensure_ascii=False))
-    f.close()
+    write_json_file(list(set(nouns)), 'nouns')
+    write_file(mecab.parse(nhk + twitter), 'wakati.txt')
 
-    f = open(join(abspath(dirname(__file__)), 'wakati.txt'), 'w')
-    f.write(mecab.parse(nhk + twitter))
-    f.close()
     data = word2vec.Text8Corpus('wakati.txt')
     model = word2vec.Word2Vec(data, size=200, min_count=0)
 
