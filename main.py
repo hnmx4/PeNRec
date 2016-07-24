@@ -19,30 +19,35 @@ features = np.empty([0, 200], float)
 for noun in nouns:
     features = np.append(features, np.array(model[noun])[np.newaxis, :], axis=0)
 
-n_clusters = 6
-kmeans_model = KMeans(n_clusters=n_clusters, random_state=10).fit(features)
 
-labels = kmeans_model.labels_
+# PCA
+pca = PCA(n_components=2)
+pc_features = pca.fit_transform(features)
 
-cluster = {}
-for label, noun in zip(labels, nouns):
-    cluster[noun] = label
 
-count = {}
-for label in labels:
-    count[label] = 0
+# K-means
+kmeans = KMeans(n_clusters=6, random_state=10).fit(pc_features)
 
+
+labels = kmeans.labels_
+cluster = {noun: label for label, noun in zip(labels, nouns)}
+
+
+# calculate most frequent cluster in twitter-noun
 twitter_nouns = read_json_file('twitter-nouns')
+count = {label: 0 for label in labels}
 for noun in twitter_nouns:
     count[cluster[noun]] += 1
+
 most_interest_label = sorted(count.items(), key=lambda x: x[1], reverse=True)[0][0]
 
+
+# match nhk-news with user's interest
 nhk_articles = read_json_file('nhk-articles')
-match_articles = {}
+matching_articles = {}
+
 for k, v in nhk_articles.items():
-    count = {}
-    for label in labels:
-        count[label] = 0
+    count = {label: 0 for label in labels}
     deno = 0
     for word in v['nouns']:
         count[cluster[word]] += 1
@@ -53,37 +58,32 @@ for k, v in nhk_articles.items():
     nhk_articles[k] = v
 
     if v['label'] == most_interest_label:
-        match_articles[k] = v
+        matching_articles[k] = v
 
-match_articles = sorted(match_articles.items(), key=lambda x: x[1]['rate'], reverse=True)
+match_articles = sorted(matching_articles.items(), key=lambda x: x[1]['rate'], reverse=True)
 for k, v in match_articles[:16]:
     print(k, v['url'], v['rate'])
 
-interest = []
-for noun in twitter_nouns:
-    if cluster[noun] == most_interest_label:
-        interest.append(noun)
 
-pca = PCA(n_components=2)
-pca.fit(features)
-pa = pca.components_
-
-lb_pa = []
+# draw graph
+lb_pc = []
 # [
 #     [[], []],
 #     [[], []],
 #     ...
 # ]
-
-for i in range(n_clusters):
-    lb_pa.append([[], []])
-for noun, x, y in zip(nouns, pa[0], pa[1]):
-    lb_pa[cluster[noun]][0].append(x)
-    lb_pa[cluster[noun]][1].append(y)
+for i in range(len(kmeans.cluster_centers_)):
+    lb_pc.append([[], []])
+for noun, f in zip(nouns, pc_features):
+    lb_pc[cluster[noun]][0].append(f[0])
+    lb_pc[cluster[noun]][1].append(f[1])
 
 col = {0: 'b', 1: 'g', 2: 'r', 3: 'c', 4: 'm', 5: 'y', 6: 'k', 7: 'w'}
-for i, e in enumerate(lb_pa):
+for i, e in enumerate(lb_pc):
     plot.scatter(e[0], e[1], c=col[i], alpha=0.7)
+    center = kmeans.cluster_centers_[i]
+    for x, y in zip(e[0], e[1]):
+        plot.scatter([center[0], x], [center[1], y], c=col[i])
 
 plot.title('features')
 
